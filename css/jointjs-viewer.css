@@ -1,0 +1,13 @@
+.jointjs-view-wrapper {
+    overflow: hidden;
+    width: 100%;
+    padding: 28px;
+}
+
+.jointjs-view {
+    width: 100%;
+    min-height: 80vh;
+    height: auto;
+    border: 1px solid black;
+    cursor: grab;
+}

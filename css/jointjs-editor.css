@@ -1,0 +1,50 @@
+.node-wizard {
+    z-index: 100;
+    position: absolute;
+    top: initial;
+    left: initial;
+    display: none;
+    background-color: white;
+    border-radius: 8px;
+    padding: 0 16px;
+    box-shadow: 0 2px 0.25rem rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: 0 2px 0.25rem rgba(0, 0, 0, 0.1);
+    -webkit-box-shadow: 0 2px 0.25rem rgba(0, 0, 0, 0.1);
+}
+
+#edit-field-diagram-0-node-wizard-footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+#edit-field-diagram-0-node-wizard-footer .button {
+    margin: 0;
+}
+
+#edit-field-diagram-0-node-wizard-footer .update-button {
+    display: none;
+}
+
+#edit-field-diagram-0-node-wizard-footer div {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.label-measure {
+    visibility: hidden;
+    position: absolute;
+    font-size: 14px;
+    max-width: 200px;
+    white-space: pre-line;
+}
+
+.jointjs-editor {
+    width: 100% !important;
+}
+
+.form-item__description ul {
+    list-style-type: "- ";
+}

@@ -1,0 +1,24 @@
+jointjs.editor:
+  js:
+    https://cdn.jsdelivr.net/npm/@joint/core@4.0.4/dist/joint.min.js:
+      { type: external, minified: true }
+    js/jointjs-editor.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/drupal.once
+  css:
+    theme:
+      css/jointjs-editor.css: {}
+jointjs.viewer:
+  js:
+    https://cdn.jsdelivr.net/npm/@joint/core@4.0.4/dist/joint.min.js:
+      { type: external, minified: true }
+    js/jointjs-viewer.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/drupal.once
+  css:
+    theme:
+      css/jointjs-viewer.css: {}

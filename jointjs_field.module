@@ -1,0 +1,29 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function jointjs_field_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.jointjs_field':
+      return t('
+        <h2>JointJS field for Drupal.</h2>
+      ');
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function jointjs_field_theme() {
+  return [
+    'jointjs_diagram' => [
+      'variables' => ['diagram_data' => NULL],
+      'template' => 'jointjs-diagram', // Name of your Twig template.
+    ],
+  ];
+}
+
+?>
