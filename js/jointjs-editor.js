@@ -244,6 +244,7 @@
                             },
                         },
                     });
+
                     element.addTo(graph)
                     addElementTools(element)
                     hideTools();
@@ -265,16 +266,67 @@
 
                 function addElementTools(element) {
                     const elementView = element.findView(paper);
-                    const removeButton = new joint.elementTools.Remove();
-                    const connectButton = new joint.elementTools.Connect({
+
+                    const RemoveButton = new joint.elementTools.Remove();
+                    const ConnectButton = new joint.elementTools.Connect({
                         x: '100%',
                         y: '100%',
                         magnet: 'body'
                     });
+                    const cCrossedLinesTool = new joint.elementTools.Button({
+                        markup: [{
+                            tagName: 'circle',
+                            selector: 'button',
+                            attributes: {
+                                'r': 7,
+                                'fill': 'white',
+                                'cursor': 'pointer'
+                            }
+                        }, {
+                            tagName: 'path',
+                            selector: 'icon',
+                            attributes: {
+                                'd': 'M -4 -4 L 4 4 M -4 4 L 4 -4',
+                                'fill': 'none',
+                                'stroke': 'gray',
+                                'stroke-width': 1,
+                                'pointer-events': 'none'
+                            }
+                        }],
+                        x: '100%',
+                        y: 0,
+                        action: function (evt, elementView) {
+                            const element = elementView.model;
+                            let size = element.getBBox()
+                            size = size.scale(1.2, 1.2, size.center())
+
+                            const lineOne = new joint.shapes.standard.Link();
+                            const lineTwo = new joint.shapes.standard.Link();
+                            const lineConfig = {
+                                line: {
+                                    stroke: 'gray',
+                                    'stroke-width': 2, // Adjust stroke width if needed
+                                    'stroke-opacity': 0.5, // Set opacity to 50%
+                                    targetMarker: { type: 'none' }
+                                },
+                            }
+
+                            lineOne.prop('source', size.topLeft());
+                            lineOne.prop('target', size.bottomRight());
+                            lineOne.attr(lineConfig);
+
+                            lineTwo.prop('source', size.topRight());
+                            lineTwo.prop('target', size.bottomLeft());
+                            lineTwo.attr(lineConfig);
+
+                            lineOne.addTo(graph)
+                            lineTwo.addTo(graph)
+                        }
+                    });
 
                     const toolsView = new joint.dia.ToolsView({
                         name: 'basic-tools',
-                        tools: [removeButton, connectButton]
+                        tools: [RemoveButton, ConnectButton, cCrossedLinesTool]
                     });
 
                     elementView.addTools(toolsView);
@@ -283,10 +335,10 @@
 
                 function addLinkTools(link) {
                     const linkView = link.findView(paper);
-                    const removeButton = new joint.linkTools.Remove({ distance: "50%", offset: 10 });
-                    const verticesTool = new joint.linkTools.Vertices();
-                    const segmentsTool = new joint.linkTools.Segments();
-                    const sourceArrowheadTool = new joint.linkTools.Button({
+                    const RemoveButton = new joint.linkTools.Remove({ distance: "50%", offset: 10 });
+                    const VerticesTool = new joint.linkTools.Vertices();
+                    const SegmentsTool = new joint.linkTools.Segments();
+                    const cSourceArrowheadTool = new joint.linkTools.Button({
                         markup: [{
                             tagName: 'circle',
                             selector: 'button',
@@ -312,7 +364,7 @@
                             }
                         }
                     });
-                    const targetArrowheadTool = new joint.linkTools.Button({
+                    const cTargetArrowheadTool = new joint.linkTools.Button({
                         markup: [
                             {
                                 tagName: 'circle',
@@ -340,7 +392,7 @@
                             }
                         }
                     });
-                    const dashedLineTool = new joint.linkTools.Button({
+                    const cDashedLineTool = new joint.linkTools.Button({
                         markup: [{
                             tagName: 'circle',
                             selector: 'button',
@@ -365,7 +417,14 @@
 
                     const toolsView = new joint.dia.ToolsView({
                         name: 'basic-tools',
-                        tools: [removeButton, verticesTool, segmentsTool, sourceArrowheadTool, targetArrowheadTool, dashedLineTool]
+                        tools: [
+                            RemoveButton,
+                            VerticesTool,
+                            SegmentsTool,
+                            cSourceArrowheadTool,
+                            cTargetArrowheadTool,
+                            cDashedLineTool,
+                        ]
                     });
 
                     linkView.addTools(toolsView);
