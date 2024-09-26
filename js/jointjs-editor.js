@@ -145,7 +145,6 @@
 
                 paper.on("blank:mousewheel", function (e, x, y, delta) {
                     e.preventDefault();
-                    hideTools();
 
                     const { sx: sx0 } = paper.scale();
                     paper.scaleUniformAtPoint(clamp(sx0 + zoomStep * delta, minZoom, maxZoom), { x, y });
@@ -153,7 +152,6 @@
 
                 paper.on('paper:pinch', function (evt, x, y, sx) {
                     evt.preventDefault();
-                    hideTools();
 
                     const { sx: sx0 } = paper.scale();
                     paper.scaleUniformAtPoint(clamp(sx0 * sx, minZoom, maxZoom), { x, y });
