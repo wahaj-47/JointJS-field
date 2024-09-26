@@ -25,8 +25,6 @@ class JointJSFieldWidget extends WidgetBase
    */
   public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state)
   {
-    \Drupal::logger('JointJS Field')->debug('Value exists: ' . print_r($items[$delta]->value, TRUE));
-
     // Hidden field to store JointJS diagram data as JSON.
     $element['value'] = [
       '#type' => 'hidden',
@@ -43,13 +41,15 @@ class JointJSFieldWidget extends WidgetBase
         'class' => ['node-wizard']
       ],
       'label-input' => [
-        '#type' => 'textarea',
+        '#type' => 'text_format',
+        '#format' => 'rich_text',
         '#value' => '',
         '#attributes' => [
-          'id' => 'label-input',
           'class' => ['label-input'],
         ],
         '#input' => false,
+        '#rows' => 10,
+        '#cols' => 10
       ],
       'footer' => [
         '#type' => 'container',

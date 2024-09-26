@@ -8,11 +8,23 @@
                 const editorId = $(element).attr('id');
                 const hiddenField = $('.jointjs-data')
                 const nodeWizard = $('#node-wizard')
-                const labelField = $('#label-input')
+                const labelField = $('textarea.label-input')
                 const textOnly = $('#edit-field-diagram-0-node-wizard-footer-text-only')
                 const createButton = $('#edit-field-diagram-0-node-wizard-footer-create-button');
                 const updateButton = $('#edit-field-diagram-0-node-wizard-footer-update-button');
                 const diagramData = hiddenField.val()
+
+                let ckEditorInstance;
+                // Wait until the editor has finished loading CKEditor
+                setTimeout(() => {
+                    const ckEditorId = labelField.data('ckeditor5-id');
+                    ckEditorInstance = Drupal.CKEditor5Instances.get(String(ckEditorId))
+
+                    ckEditorInstance.keystrokes.set('Esc', (_, cancel) => {
+                        hideTools();
+                        cancel();
+                    });
+                }, 0);
 
                 const namespace = joint.shapes;
 
@@ -74,18 +86,13 @@
                     updateHiddenInput();
                 })
 
-                labelField.on('keydown', function (e) {
-                    if (e.key == 'Escape') {
-                        hideTools();
-                    }
-                })
-
                 createButton.on('click', function () {
-                    createNode(labelField.val(), nodeWizard.data("x"), nodeWizard.data("y"), textOnly.is(":checked"))
+                    if (ckEditorInstance != undefined)
+                        createNode(ckEditorInstance.getData(), nodeWizard.data("x"), nodeWizard.data("y"), textOnly.is(":checked"))
                 })
 
                 updateButton.on('click', function () {
-                    updateNode(nodeWizard.data("node"), labelField.val(), textOnly.is(":checked"));
+                    updateNode(nodeWizard.data("node"), ckEditorInstance.getData(), textOnly.is(":checked"));
                 })
 
                 // 
@@ -163,7 +170,7 @@
                     })
                     nodeWizard.data("x", x);
                     nodeWizard.data("y", y);
-                    labelField.focus();
+                    ckEditorInstance.focus();
                 })
 
                 paper.on('element:pointerclick', function (elementView, e, x, y) {
@@ -190,14 +197,22 @@
                     })
 
                     nodeWizard.data("node", element);
-                    labelField.val(element.attr(['label', 'text']))
+
+                    // Backward compatibility: Nodes were created using standard rectangle shape 
+                    // Check if node was created without the custom shape
+                    if (element.prop('type') != "Node") {
+                        ckEditorInstance.setData(element.attr(['label', 'text']))
+                    }
+                    else {
+                        ckEditorInstance.setData(element.attr(['htmlContent', 'html']))
+                    }
 
                     if (element.attr(['body', 'stroke']) == 'transparent')
                         textOnly.prop('checked', true);
                     else
                         textOnly.prop('checked', false);
 
-                    labelField.focus();
+                    ckEditorInstance.focus();
                 })
 
                 // 
@@ -208,55 +223,81 @@
                     return Math.min(Math.max(num, min), max)
                 }
 
-                function getLabelSize(labelText) {
+                function getContentSize(body) {
                     const measureDiv = $('#label-measure');
-                    $(measureDiv).text(labelText);
+                    $(measureDiv).html(body);
                     return { width: $(measureDiv).outerWidth(), height: $(measureDiv).outerHeight() };
                 }
 
                 function hideTools() {
                     paper.hideTools();
-                    labelField.val("");
+                    if (ckEditorInstance != null) ckEditorInstance.setData('')
                     textOnly.prop('checked', false);
                     nodeWizard.css({ display: "none" });
                     createButton.show()
                     updateButton.hide()
                 }
 
-                function createNode(labelText, x, y, textOnly = false) {
-                    const element = new joint.shapes.standard.Rectangle();
-                    const { width, height } = getLabelSize(labelText);
-                    element.position(x, y);
-                    element.resize(width + 24, height + 24);
-                    element.attr({
-                        body: {
-                            fill: 'transparent',
-                            stroke: textOnly ? 'transparent' : 'black',
-                            rx: 4,
-                        },
-                        label: {
-                            text: labelText,
-                            fill: 'black',
-                            textWrap: {
-                                width: -10,  // Width of the wrapped text (auto-fits to the element width)
-                                height: 'auto',  // Height of the text block, 'auto' allows dynamic height
-                                ellipsis: true, // If text overflows, use ellipsis
+                function createNode(content, x, y, textOnly = false) {
+                    const Node = joint.dia.Element.define('Node', {
+                        attrs: {
+                            body: {
+                                width: 'calc(w)',
+                                height: 'calc(h)',
+                                fill: textOnly ? 'transparent' : '#F5F5F5',
+                                stroke: textOnly ? 'transparent' : 'black',
+                                strokeWidth: 2,
+                                rx: 4,
                             },
+                            foreignObject: {
+                                width: 'calc(w-12)',
+                                height: 'calc(h-12)',
+                                x: 6,
+                                y: 6
+                            },
+                            htmlContent: {
+                                html: content
+                            }
                         },
-                    });
+                    }, {
+                        // The /* xml */ comment is optional.
+                        // It is used to tell the IDE that the markup is XML.
+                        markup: joint.util.svg/* xml */`
+                            <rect @selector="body"/>
+                            <foreignObject @selector="foreignObject" style="text-align: center;">
+                                <div xmlns="http://www.w3.org/1999/xhtml" @selector="htmlContent" 
+                                class="node-div">
+                                    ${content}
+                                </div>
+                            </foreignObject>
+                        `
+                    })
+                    const element = new Node();
+                    const { width, height } = getContentSize(content);
+                    element.position(x, y);
+                    element.resize(width, height + 24);
 
                     element.addTo(graph)
                     addElementTools(element)
                     hideTools();
+                    return element
                 }
 
-                function updateNode(node, labelText, textOnly) {
-                    const { width, height } = getLabelSize(labelText);
-                    node.attr(['label', 'text'], labelText)
+                function updateNode(node, content, textOnly) {
+                    // Upgrade the node to use the custom shape
+                    if (node.prop('type') != "Node") {
+                        const currentPosition = node.position();
+                        createNode(content, currentPosition.x, currentPosition.y, textOnly)
+                        node.remove();
+                        return;
+                    }
+
+                    const { width, height } = getContentSize(content);
+                    node.attr(['htmlContent', 'html'], content)
                     node.attr(['body', 'stroke'], textOnly ? 'transparent' : 'black')
-                    node.prop('size/width', width + 12)
-                    node.prop('size/height', height + 12)
-                    hideTools();
+                    node.prop('size/width', width)
+                    node.prop('size/height', height + 24)
+                    hideTools()
                 }
 
                 function updateHiddenInput() {
