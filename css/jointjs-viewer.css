@@ -11,3 +11,21 @@
     border: 1px solid black;
     cursor: grab;
 }
+
+.node-div {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column
+}
+
+.node-div p,
+.node-div h1,
+.node-div h2,
+.node-div h3,
+.node-div h4,
+.node-div h5,
+.node-div h6 {
+    margin: 0
+}

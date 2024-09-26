@@ -26,7 +26,40 @@
                     });
                 }, 0);
 
-                const namespace = joint.shapes;
+                const Node = joint.dia.Element.define('Node', {
+                    attrs: {
+                        body: {
+                            width: 'calc(w)',
+                            height: 'calc(h)',
+                            fill: '#F5F5F5',
+                            stroke: 'black',
+                            strokeWidth: 2,
+                            rx: 4,
+                        },
+                        foreignObject: {
+                            width: 'calc(w-12)',
+                            height: 'calc(h-12)',
+                            x: 6,
+                            y: 6
+                        },
+                        htmlContent: {
+                            html: '<p>Placeholder content</p>'
+                        }
+                    },
+                }, {
+                    // The /* xml */ comment is optional.
+                    // It is used to tell the IDE that the markup is XML.
+                    markup: joint.util.svg/* xml */`
+                        <rect @selector="body"/>
+                        <foreignObject @selector="foreignObject" style="text-align: center;">
+                            <div xmlns="http://www.w3.org/1999/xhtml" @selector="htmlContent" 
+                            class="node-div">
+                            </div>
+                        </foreignObject>
+                    `
+                })
+
+                const namespace = { ...joint.shapes, Node };
 
                 // Initialize the JointJS diagram editor.
                 const graph = new joint.dia.Graph({}, { cellNamespace: namespace });
@@ -239,48 +272,20 @@
                 }
 
                 function createNode(content, x, y, textOnly = false) {
-                    const Node = joint.dia.Element.define('Node', {
-                        attrs: {
-                            body: {
-                                width: 'calc(w)',
-                                height: 'calc(h)',
-                                fill: textOnly ? 'transparent' : '#F5F5F5',
-                                stroke: textOnly ? 'transparent' : 'black',
-                                strokeWidth: 2,
-                                rx: 4,
-                            },
-                            foreignObject: {
-                                width: 'calc(w-12)',
-                                height: 'calc(h-12)',
-                                x: 6,
-                                y: 6
-                            },
-                            htmlContent: {
-                                html: content
-                            }
-                        },
-                    }, {
-                        // The /* xml */ comment is optional.
-                        // It is used to tell the IDE that the markup is XML.
-                        markup: joint.util.svg/* xml */`
-                            <rect @selector="body"/>
-                            <foreignObject @selector="foreignObject" style="text-align: center;">
-                                <div xmlns="http://www.w3.org/1999/xhtml" @selector="htmlContent" 
-                                class="node-div">
-                                    ${content}
-                                </div>
-                            </foreignObject>
-                        `
-                    })
-                    const element = new Node();
-                    const { width, height } = getContentSize(content);
-                    element.position(x, y);
-                    element.resize(width, height + 24);
 
-                    element.addTo(graph)
-                    addElementTools(element)
+                    const node = new Node();
+                    const { width, height } = getContentSize(content);
+                    node.position(x, y);
+                    node.resize(width + 24, height);
+
+                    node.attr(['htmlContent', 'html'], content)
+                    node.attr(['body', 'fill'], textOnly ? 'transparent' : '#F5F5F5')
+                    node.attr(['body', 'stroke'], textOnly ? 'transparent' : 'black')
+
+                    node.addTo(graph)
+                    addElementTools(node)
                     hideTools();
-                    return element
+                    return node
                 }
 
                 function updateNode(node, content, textOnly) {
@@ -294,9 +299,10 @@
 
                     const { width, height } = getContentSize(content);
                     node.attr(['htmlContent', 'html'], content)
+                    node.attr(['body', 'fill'], textOnly ? 'transparent' : '#F5F5F5')
                     node.attr(['body', 'stroke'], textOnly ? 'transparent' : 'black')
-                    node.prop('size/width', width)
-                    node.prop('size/height', height + 24)
+                    node.prop('size/width', width + 24)
+                    node.prop('size/height', height)
                     hideTools()
                 }
 

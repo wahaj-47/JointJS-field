@@ -37,6 +37,7 @@
     visibility: hidden;
     position: absolute;
     white-space: pre-line;
+    max-width: 300px;
 }
 
 .jointjs-editor {

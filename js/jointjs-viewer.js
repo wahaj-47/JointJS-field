@@ -2,7 +2,41 @@
     Drupal.behaviors.jointjsFormatter = {
         attach: function (context, settings) {
             once('jointjs-view', '.jointjs-view', context).forEach(function (element) {
-                const namespace = joint.shapes;
+
+                const Node = joint.dia.Element.define('Node', {
+                    attrs: {
+                        body: {
+                            width: 'calc(w)',
+                            height: 'calc(h)',
+                            fill: '#F5F5F5',
+                            stroke: 'black',
+                            strokeWidth: 2,
+                            rx: 4,
+                        },
+                        foreignObject: {
+                            width: 'calc(w-12)',
+                            height: 'calc(h-12)',
+                            x: 6,
+                            y: 6
+                        },
+                        htmlContent: {
+                            html: '<p>Placeholder content</p>'
+                        }
+                    },
+                }, {
+                    // The /* xml */ comment is optional.
+                    // It is used to tell the IDE that the markup is XML.
+                    markup: joint.util.svg/* xml */`
+                        <rect @selector="body"/>
+                        <foreignObject @selector="foreignObject" style="text-align: center;">
+                            <div xmlns="http://www.w3.org/1999/xhtml" @selector="htmlContent" 
+                            class="node-div">
+                            </div>
+                        </foreignObject>
+                    `
+                })
+
+                const namespace = { ...joint.shapes, Node };
                 const graph = new joint.dia.Graph({}, { cellNamespace: namespace });
                 const paper = new joint.dia.Paper({
                     el: element,
