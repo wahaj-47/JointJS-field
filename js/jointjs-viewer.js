@@ -113,7 +113,44 @@
                     paper.setDimensions($(element).parent().width(), $(element).parent().height())
                     paper.transformToFitContent({ verticalAlign: 'middle', horizontalAlign: 'middle', padding: 20 });
                 });
+
+                $('.jointjs-download-btn').on('click', function () {
+                    paper.transformToFitContent({ verticalAlign: 'top', horizontalAlign: 'left', padding: 20 });
+                    const scaleFactor = 3;
+                    const bbox = paper.getContentBBox();
+                    const width = bbox.width * scaleFactor
+                    const height = bbox.height * scaleFactor
+
+                    // Serialize the SVG to a string
+                    const svgData = new XMLSerializer().serializeToString(paper.svg);
+                    const svgDataBase64 = btoa(unescape(encodeURIComponent(svgData)));
+                    const svgDataUrl = `data:image/svg+xml;charset=utf-8;base64,${svgDataBase64}`;
+
+                    const image = new Image();
+                    image.src = svgDataUrl;
+
+                    image.addEventListener('load', () => {
+                        // Use viewBox dimensions instead of getBBox to avoid cropping
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width + 40;
+                        canvas.height = height + 40
+
+                        const context = canvas.getContext('2d');
+                        context.fillStyle = "white";  // Set background to white
+                        context.fillRect(0, 0, width, height);
+
+                        context.drawImage(image, 0, 0, (width - 40) * scaleFactor, (height - 40) * scaleFactor);
+
+                        // Create a link to download the image
+                        const link = document.createElement('a');
+                        link.download = 'diagram.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        paper.transformToFitContent({ verticalAlign: 'middle', horizontalAlign: 'middle', padding: 20 });
+
+                    });
+                });
             });
         }
-    };
+    }
 })(jQuery, Drupal);

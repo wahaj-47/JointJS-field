@@ -29,3 +29,19 @@
 .node-div h6 {
     margin: 0
 }
+
+.jointjs-download-btn {
+    position: absolute;
+    top: 50px;
+    right: 50px;
+}
+
+.btn-label {
+    margin-left: 4px;
+}
+
+@media (max-width: 767px) {
+    .btn-label {
+        display: none;
+    }
+}
