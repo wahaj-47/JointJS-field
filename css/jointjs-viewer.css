@@ -17,7 +17,8 @@
     height: 100%;
     align-items: center;
     justify-content: center;
-    flex-direction: column
+    flex-direction: column;
+    font-family: 'Times New Roman', Times, serif;
 }
 
 .node-div p,
@@ -27,7 +28,8 @@
 .node-div h4,
 .node-div h5,
 .node-div h6 {
-    margin: 0
+    margin: 0;
+    font-size: initial;
 }
 
 .jointjs-download-btn {
