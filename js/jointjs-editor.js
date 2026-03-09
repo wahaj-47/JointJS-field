@@ -1,5 +1,8 @@
 (function ($, Drupal, once) {
 
+  //
+  // Base64 detector
+  //
   function isBase64(str) {
     if (typeof str !== 'string') return false;
     try {
@@ -12,17 +15,17 @@
 
   Drupal.behaviors.jointjsEditor = {
     attach: function (context, settings) {
+
+      //
+      // Main editor behavior
+      //
       once('jointjs-editor', '.jointjs-editor', context).forEach(function (element) {
 
-        // 🔥 Scope to this field instance (single-value field)
-        const hiddenField = $(element)
-          .closest('.field--type-jointjs-field.field--name-field-diagram')
-          .find('.jointjs-data')
-          .first();
+        // Scope to this field instance
+        const fieldWrapper = $(element).closest('.field--type-jointjs-field.field--name-field-diagram');
+        const hiddenField = fieldWrapper.find('.jointjs-data').first();
 
         const editorId = $(element).attr('id');
-        const fieldWrapper = $(element).closest('.field--type-jointjs-field.field--name-field-diagram');
-
         const nodeWizard = fieldWrapper.find('#node-wizard');
         const labelField = fieldWrapper.find('textarea.label-input');
         const textOnly = fieldWrapper.find('.text-only');
@@ -32,7 +35,25 @@
 
         let ckEditorInstance;
 
+        //
+        // Decode textarea → readable JSON
+        //
+        let decodedJSON = diagramData;
+
+        if (isBase64(diagramData)) {
+          try {
+            decodedJSON = JSON.stringify(JSON.parse(atob(diagramData)), null, 2);
+          } catch (e) {
+            console.error("Failed to decode base64:", e);
+          }
+        }
+
+        // Replace textarea contents with readable JSON
+        hiddenField.val(decodedJSON);
+
+        //
         // CKEditor instance
+        //
         setTimeout(() => {
           const ckEditorId = labelField.data('ckeditor5-id');
           if (!ckEditorId) return;
@@ -45,7 +66,9 @@
           });
         }, 0);
 
+        //
         // Node definition
+        //
         const Node = joint.dia.Element.define('Node', {
           attrs: {
             body: {
@@ -77,6 +100,9 @@
 
         const namespace = { ...joint.shapes, Node };
 
+        //
+        // Graph + Paper
+        //
         const graph = new joint.dia.Graph({}, { cellNamespace: namespace });
 
         const defaultLink = new joint.shapes.standard.Link({
@@ -101,38 +127,30 @@
           interactive: { labelMove: true }
         });
 
-        // Load existing diagram (base64 or raw JSON)
-        if (diagramData && typeof diagramData === 'string') {
-          let raw = null;
+        //
+        // Load existing diagram from decoded JSON
+        //
+        let raw = null;
 
-          if (isBase64(diagramData)) {
-            try {
-              raw = JSON.parse(atob(diagramData));
-            } catch (e) {
-              console.error('Base64 decode failed:', e);
-            }
-          }
-
-          if (!raw) {
-            try {
-              raw = JSON.parse(diagramData);
-            } catch (e) {
-              console.error('Raw JSON parse failed:', e);
-            }
-          }
-
-          if (raw) {
-            graph.fromJSON(raw);
-            graph.getElements().forEach(addElementTools);
-            graph.getLinks().forEach(addLinkTools);
-            paper.transformToFitContent({
-              verticalAlign: 'middle',
-              horizontalAlign: 'middle'
-            });
-          }
+        try {
+          raw = JSON.parse(decodedJSON);
+        } catch (e) {
+          console.error("Failed to parse decoded JSON:", e);
         }
 
-        // Graph change events
+        if (raw) {
+          graph.fromJSON(raw);
+          graph.getElements().forEach(addElementTools);
+          graph.getLinks().forEach(addLinkTools);
+          paper.transformToFitContent({
+            verticalAlign: 'middle',
+            horizontalAlign: 'middle'
+          });
+        }
+
+        //
+        // Graph change events → save base64
+        //
         graph.on('change', updateHiddenInput);
         graph.on('add', function (cell) {
           updateHiddenInput();
@@ -140,7 +158,9 @@
         });
         graph.on('remove', updateHiddenInput);
 
+        //
         // Wizard buttons
+        //
         createButton.on('click', function (e) {
           e.preventDefault();
           if (!ckEditorInstance) return;
@@ -162,7 +182,9 @@
           );
         });
 
+        //
         // Zoom + pan
+        //
         const zoomStep = 0.1;
         const minZoom = 0.5;
         const maxZoom = 2;
@@ -211,7 +233,9 @@
           isPanning = false;
         });
 
+        //
         // Node creation/editing
+        //
         paper.on('blank:pointerdblclick', function (e, x, y) {
           if (!ckEditorInstance) return;
 
@@ -265,7 +289,9 @@
           ckEditorInstance.focus();
         });
 
+        //
         // Utilities
+        //
         function getContentSize(body) {
           const measureDiv = fieldWrapper.find('#label-measure');
           measureDiv.html(body);
@@ -322,13 +348,17 @@
           updateHiddenInput();
         }
 
+        //
         // Save graph → base64
+        //
         function updateHiddenInput() {
           const json = JSON.stringify(graph.toJSON());
           hiddenField.val(btoa(json));
         }
 
+        //
         // Tools
+        //
         function addElementTools(element) {
           const elementView = element.findView(paper);
 
