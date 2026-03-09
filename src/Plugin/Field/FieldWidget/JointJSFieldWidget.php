@@ -2,21 +2,22 @@
 
 namespace Drupal\jointjs_field\Plugin\Field\FieldWidget;
 
+use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'jointjs_field_widget' widget.
- *
- * @FieldWidget(
- *   id = "jointjs_field_widget",
- *   label = @Translation("JointJS Diagram Widget"),
- *   field_types = {
- *     "jointjs_field"
- *   }
- * )
  */
+#[FieldWidget(
+  id: "jointjs_field_widget",
+  label: new TranslatableMarkup("JointJS Diagram Widget"),
+  field_types: [
+    "jointjs_field"
+  ],
+)]
 class JointJSFieldWidget extends WidgetBase
 {
 
@@ -27,7 +28,7 @@ class JointJSFieldWidget extends WidgetBase
   {
     // Hidden field to store JointJS diagram data as JSON.
     $element['value'] = [
-      '#type' => 'hidden',
+      '#type' => 'textarea',
       '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : '',
       '#attributes' => [
         'class' => ['jointjs-data']

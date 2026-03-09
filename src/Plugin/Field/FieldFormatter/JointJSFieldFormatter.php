@@ -2,20 +2,21 @@
 
 namespace Drupal\jointjs_field\Plugin\Field\FieldFormatter;
 
+use Drupal\Core\Field\Attribute\FieldFormatter;
 use Drupal\Core\Field\FormatterBase;
 use Drupal\Core\Field\FieldItemListInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'jointjs_field_formatter' formatter.
- *
- * @FieldFormatter(
- *   id = "jointjs_field_formatter",
- *   label = @Translation("JointJS Diagram Formatter"),
- *   field_types = {
- *     "jointjs_field"
- *   }
- * )
  */
+#[FieldFormatter(
+  id: "jointjs_field_formatter",
+  label: new TranslatableMarkup("JointJS Diagram Formatter"),
+  field_types: [
+    "jointjs_field"
+  ],
+)]
 class JointJSFieldFormatter extends FormatterBase
 {
 

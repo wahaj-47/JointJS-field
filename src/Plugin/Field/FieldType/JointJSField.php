@@ -2,21 +2,22 @@
 
 namespace Drupal\jointjs_field\Plugin\Field\FieldType;
 
+use Drupal\Core\Field\Attribute\FieldType;
 use Drupal\Core\Field\FieldItemBase;
 use Drupal\Core\TypedData\DataDefinition;
 use Drupal\Core\Field\FieldStorageDefinitionInterface;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
 /**
  * Plugin implementation of the 'jointjs_field' field type.
- *
- * @FieldType(
- *   id = "jointjs_field",
- *   label = @Translation("JointJS Diagram"),
- *   description = @Translation("Field type for JointJS diagrams."),
- *   default_widget = "jointjs_field_widget",
- *   default_formatter = "jointjs_field_formatter"
- * )
  */
+#[FieldType(
+    id: "jointjs_field",
+    label: new TranslatableMarkup("JointJS Diagram"),
+    description: new TranslatableMarkup("Field type for JointJS diagrams."),
+    default_widget: "jointjs_field_widget",
+    default_formatter: "jointjs_field_formatter"
+)]
 class JointJSField extends FieldItemBase
 {
 

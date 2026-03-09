@@ -25,5 +25,3 @@ function jointjs_field_theme() {
     ],
   ];
 }
-
-?>
