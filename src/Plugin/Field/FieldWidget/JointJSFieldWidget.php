@@ -24,114 +24,104 @@ class JointJSFieldWidget extends WidgetBase
   /**
    * {@inheritdoc}
    */
-  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state)
-  {
-    // Hidden field to store JointJS diagram data as JSON.
+  public function formElement(FieldItemListInterface $items, $delta, array $element, array &$form, FormStateInterface $form_state) {
+
+    $value = $items[$delta]->value ?? '';
+
+    // The hidden textarea that stores the base64 JSON.
     $element['value'] = [
       '#type' => 'textarea',
-      '#default_value' => isset($items[$delta]->value) ? $items[$delta]->value : '',
+      '#default_value' => $value,
       '#attributes' => [
-        'class' => ['jointjs-data']
+        'class' => ['jointjs-data'],
       ],
     ];
 
-    $element['node-wizard'] = [
+    // Node wizard container (not a form element, just markup).
+    $element['node_wizard'] = [
       '#type' => 'container',
       '#attributes' => [
         'id' => 'node-wizard',
-        'class' => ['node-wizard']
+        'class' => ['node-wizard'],
+        'style' => 'display:none;',
       ],
-      'label-input' => [
-        '#type' => 'text_format',
-        '#format' => 'rich_text',
-        '#value' => '',
-        '#attributes' => [
-          'class' => ['label-input'],
-        ],
-        '#input' => false,
-        '#rows' => 10,
-        '#cols' => 10
-      ],
-      'footer' => [
-        '#type' => 'container',
-        '#attributes' => [
-          'class' => ['node-wizard-footer']
-        ],
-        'text-only' => [
-          '#type' => 'checkbox',
-          '#title' => t('Text only'),
-          '#attributes' => [
-            'class' => ['text-only', 'btn-check'],
-          ],
-          '#options' => [
-            'class' => ['btn', 'btn-outline-primary'],
-            'for' => 'text-only',
-          ],
-          '#input' => false,
-          '#value' => 0
-        ],
-        'create-button' => [
-          '#type' => 'button',
-          '#value' => t('Create'),
-          '#attributes' => [
-            'class' => ['create-button'],
-            'onclick' => 'return false'
-          ],
-        ],
-        'update-button' => [
-          '#type' => 'button',
-          '#value' => t('Save'),
-          '#attributes' => [
-            'class' => ['update-button'],
-            'onclick' => 'return false'
-          ],
-        ]
-      ],
-
     ];
 
-    // Empty div for measuring the label size before creating new nodes
-    $element['label-measure'] = [
+    // CKEditor text_format input (this *must* be a real input).
+    $element['node_wizard']['label_input'] = [
+      '#type' => 'text_format',
+      '#title' => $this->t('Label'),
+      '#format' => 'rich_text',
+      '#default_value' => '',
+      '#attributes' => [
+        'class' => ['label-input'],
+      ],
+    ];
+
+    // Checkbox (must be a real input, not #input = FALSE).
+    $element['node_wizard']['text_only'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Text only'),
+      '#attributes' => [
+        'class' => ['text-only'],
+      ],
+    ];
+
+    // Wizard footer container.
+    $element['node_wizard']['footer'] = [
       '#type' => 'container',
+      '#attributes' => [
+        'class' => ['node-wizard-footer'],
+      ],
+    ];
+
+    // Create button (HTML only, NOT a Drupal submit button).
+    $element['node_wizard']['footer']['create_button'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'button',
+      '#value' => $this->t('Create'),
+      '#attributes' => [
+        'class' => ['create-button', 'button'],
+        'type' => 'button',
+      ],
+    ];
+
+    // Update button (HTML only, NOT a Drupal submit button).
+    $element['node_wizard']['footer']['update_button'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'button',
+      '#value' => $this->t('Save'),
+      '#attributes' => [
+        'class' => ['update-button', 'button'],
+        'type' => 'button',
+        'style' => 'display:none;',
+      ],
+    ];
+
+    // Hidden measurement div.
+    $element['label_measure'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'div',
       '#attributes' => [
         'id' => 'label-measure',
         'class' => ['label-measure'],
+        'style' => 'display:none;',
       ],
+      '#value' => '<p>test</p>',
     ];
 
-    $element['diagram_editor_title'] = [
-      '#type' => 'inline_template',
-      '#template' => '<label class="form-item__label js-form-required form-required">{{ title }}</label>',
-      '#context' => [
-        'title' => t('Diagram Editor'),
-      ],
-    ];
-
-    $element['diagram_editor_description'] = [
-      '#type' => 'inline_template',
-      '#template' => '<div class="form-item__description">{{ description|raw }}</div>',
-      '#context' => [
-        'description' => t('
-          <ul>
-            <li>Double click to create a new node.</li>
-            <li>Click and drag to pan.</li>
-            <li>Scroll to zoom.</li>
-          </ul>
-        '),
-      ]
-    ];
-
-    // Div for rendering JointJS editor.
+    // The actual JointJS editor canvas.
     $element['diagram_editor'] = [
       '#type' => 'container',
       '#attributes' => [
         'id' => 'jointjs-editor-' . $delta,
         'class' => ['jointjs-editor'],
-      ],
-      '#attached' => [
-        'library' => ['jointjs_field/jointjs.editor'],
+        'style' => 'width:800px; height:800px;',
       ],
     ];
+
+    // Attach JS + CSS.
+    $element['#attached']['library'][] = 'jointjs_field/jointjs.editor';
 
     return $element;
   }

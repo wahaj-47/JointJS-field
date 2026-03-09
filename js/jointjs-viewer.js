@@ -1,4 +1,4 @@
-(function ($, Drupal) {
+(function ($, Drupal, once) {
     Drupal.behaviors.jointjsFormatter = {
         attach: function (context, settings) {
             once('jointjs-view', '.jointjs-view', context).forEach(function (element) {
@@ -24,8 +24,6 @@
                         }
                     },
                 }, {
-                    // The /* xml */ comment is optional.
-                    // It is used to tell the IDE that the markup is XML.
                     markup: joint.util.svg/* xml */`
                         <rect @selector="body"/>
                         <foreignObject @selector="foreignObject" style="text-align: center;">
@@ -34,7 +32,7 @@
                             </div>
                         </foreignObject>
                     `
-                })
+                });
 
                 const namespace = { ...joint.shapes, Node };
                 const graph = new joint.dia.Graph({}, { cellNamespace: namespace });
@@ -48,8 +46,23 @@
                     interactive: false,
                     background: { color: '#FFFFFF' },
                 });
-                const json = $(element).data("diagram")
-                graph.fromJSON(json);
+
+                let raw = $(element).data("diagram");
+
+                // Decode base64, then parse JSON
+                if (typeof raw === 'string' && raw.trim() !== '') {
+                    try {
+                        const decoded = atob(raw);
+                        raw = JSON.parse(decoded);
+                    } catch (e) {
+                        console.error("Viewer diagram decode/parse error:", e, raw);
+                        raw = null;
+                    }
+                }
+
+                if (raw && typeof raw === 'object') {
+                    graph.fromJSON(raw);
+                }
 
                 paper.transformToFitContent({ verticalAlign: 'middle', horizontalAlign: 'middle', padding: 20 });
 
@@ -62,19 +75,19 @@
                     e.preventDefault();
                     const { sx: sx0 } = paper.scale();
                     paper.scaleUniformAtPoint(clamp(sx0 + zoomStep * delta, minZoom, maxZoom), { x, y });
-                })
+                });
 
                 paper.on('paper:pinch', function (evt, x, y, sx) {
                     evt.preventDefault();
                     const { sx: sx0 } = paper.scale();
                     paper.scaleUniformAtPoint(clamp(sx0 * sx, minZoom, maxZoom), { x, y });
-                })
+                });
 
                 function clamp(num, min, max) {
-                    return Math.min(Math.max(num, min), max)
+                    return Math.min(Math.max(num, min), max);
                 }
 
-                // constiables to store pan state
+                // variables to store pan state
                 const panStart = { x: 0, y: 0 };
                 const paperStart = { x: 0, y: 0 };
                 let isPanning = false;
@@ -88,17 +101,14 @@
                     paperStart.y = translate.ty;
                     isPanning = true;
 
-                    $(element).css({ cursor: "grabbing" })
+                    $(element).css({ cursor: "grabbing" });
                 });
 
                 // Handle pointer move event for panning
                 paper.on('blank:pointermove', function (e) {
                     if (isPanning) {
-                        // Calculate the difference between the current mouse position and the initial pan start
                         const dx = e.clientX - panStart.x;
                         const dy = e.clientY - panStart.y;
-
-                        // Apply the difference to the original paper position
                         paper.translate(paperStart.x + dx, paperStart.y + dy);
                     }
                 });
@@ -106,11 +116,11 @@
                 // Detect pointer up to stop panning
                 paper.on('blank:pointerup', function () {
                     isPanning = false;
-                    $(element).css({ cursor: "grab" })
+                    $(element).css({ cursor: "grab" });
                 });
 
                 $(window).on("resize", function () {
-                    paper.setDimensions($(element).parent().width(), $(element).parent().height())
+                    paper.setDimensions($(element).parent().width(), $(element).parent().height());
                     paper.transformToFitContent({ verticalAlign: 'middle', horizontalAlign: 'middle', padding: 20 });
                 });
 
@@ -118,10 +128,9 @@
                     paper.transformToFitContent({ verticalAlign: 'top', horizontalAlign: 'left', padding: 20 });
                     const scaleFactor = 3;
                     const bbox = paper.getContentBBox();
-                    const width = bbox.width * scaleFactor
-                    const height = bbox.height * scaleFactor
+                    const width = bbox.width * scaleFactor;
+                    const height = bbox.height * scaleFactor;
 
-                    // Serialize the SVG to a string
                     const svgData = new XMLSerializer().serializeToString(paper.svg);
                     const svgDataBase64 = btoa(unescape(encodeURIComponent(svgData)));
                     const svgDataUrl = `data:image/svg+xml;charset=utf-8;base64,${svgDataBase64}`;
@@ -130,27 +139,24 @@
                     image.src = svgDataUrl;
 
                     image.addEventListener('load', () => {
-                        // Use viewBox dimensions instead of getBBox to avoid cropping
                         const canvas = document.createElement('canvas');
                         canvas.width = width + 40;
-                        canvas.height = height + 40
+                        canvas.height = height + 40;
 
                         const context = canvas.getContext('2d');
-                        context.fillStyle = "white";  // Set background to white
+                        context.fillStyle = "white";
                         context.fillRect(0, 0, width, height);
 
                         context.drawImage(image, 0, 0, (width - 40) * scaleFactor, (height - 40) * scaleFactor);
 
-                        // Create a link to download the image
                         const link = document.createElement('a');
                         link.download = 'diagram.png';
                         link.href = canvas.toDataURL('image/png');
                         link.click();
                         paper.transformToFitContent({ verticalAlign: 'middle', horizontalAlign: 'middle', padding: 20 });
-
                     });
                 });
             });
         }
     }
-})(jQuery, Drupal);
+})(jQuery, Drupal, once);
