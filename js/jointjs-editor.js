@@ -17,7 +17,7 @@
         const lockButton = $('.jointjs-json-lock');
         const warningContainer = $('.jointjs-json-warning');
 
-        const gridToggle = $('.jointjs-grid-toggle'); // NEW
+        const gridToggle = $('.jointjs-grid-toggle');
 
         const nodeWizard = $('#node-wizard');
         const labelField = $('textarea.label-input');
@@ -108,37 +108,57 @@
           model: graph,
           gridSize: 10,
           height: 800,
-          background: { color: '#fafafa' }, // will be overridden by grid toggle
+          background: { color: 'transparent' }, // allow grid to show
+          drawGrid: { name: 'dot', args: { size: 10, color: '#808080' } }, // built-in dot grid
           cellViewNamespace: namespace,
           defaultLink: defaultLink,
           snapLabels: true,
           interactive: { labelMove: true }
         });
 
+        // ensure the grid is drawn immediately
+        paper.drawBackground();
+
+        // Ensure the container and paper are visible (defensive)
+        try {
+          element.style.visibility = 'visible';
+          if (paper && paper.el) paper.el.style.visibility = 'visible';
+        } catch (e) {
+          // ignore if not available yet
+        }
+
         // ------------------------------------------------------------
-        // DOT GRID TOGGLE (FULLY WORKING)
+        // GRID SNAP HELPERS
+        // ------------------------------------------------------------
+        function gridSize() {
+          return (paper && paper.options && paper.options.gridSize) ? paper.options.gridSize : 10;
+        }
+
+        function snapToGrid(x, y) {
+          const g = gridSize();
+          return {
+            x: Math.round(x / g) * g,
+            y: Math.round(y / g) * g
+          };
+        }
+
+        // ------------------------------------------------------------
+        // DOT GRID TOGGLE
         // ------------------------------------------------------------
         function applyGrid(enabled) {
           if (enabled) {
-            // Add CSS grid to container
             $(element).addClass('jointjs-dot-grid');
-
-            // Make SVG background transparent so grid shows through
             paper.options.background.color = 'transparent';
             paper.drawBackground();
           } else {
             $(element).removeClass('jointjs-dot-grid');
-
-            // Restore solid background
             paper.options.background.color = '#fafafa';
             paper.drawBackground();
           }
         }
 
-        // Initialize
         applyGrid(gridToggle.is(':checked'));
 
-        // Toggle
         gridToggle.on('change', function () {
           applyGrid($(this).is(':checked'));
         });
@@ -253,7 +273,7 @@
         }
 
         // ------------------------------------------------------------
-        // Unlock / lock JSON editing (B2-1)
+        // Unlock / lock JSON editing
         // ------------------------------------------------------------
         function setJsonEditing(enabled) {
           jsonEditingEnabled = enabled;
@@ -312,7 +332,10 @@
           const node = new Node();
           const { width, height } = getContentSize(content);
 
-          node.position(x, y);
+          // snap incoming coordinates to grid
+          const pos = snapToGrid(x, y);
+
+          node.position(pos.x, pos.y);
           node.resize(width + 24, height);
 
           node.attr(['htmlContent', 'html'], content);
@@ -366,6 +389,11 @@
 
           node.prop('size/width', width + 24);
           node.prop('size/height', height);
+
+          // re-snap to grid to keep node aligned after resize
+          const p = node.position();
+          const snapped = snapToGrid(p.x, p.y);
+          node.position(snapped.x, snapped.y);
 
           hideTools();
         }
@@ -477,6 +505,19 @@
         }
 
         // ------------------------------------------------------------
+        // Snap on drop only (no visual snap during move)
+        // ------------------------------------------------------------
+        paper.on('element:pointerup', function (elementView) {
+          const model = elementView.model;
+          const p = model.position();
+          const snapped = snapToGrid(p.x, p.y);
+
+          if (snapped.x !== p.x || snapped.y !== p.y) {
+            model.position(snapped.x, snapped.y);
+          }
+        });
+
+        // ------------------------------------------------------------
         // Load existing data + auto-upgrade
         // ------------------------------------------------------------
         (function loadInitialData() {
@@ -518,6 +559,82 @@
           });
 
           graph.getLinks().forEach(addLinkTools);
+
+          // --- Stabilize legacy element layout and re-snap positions ---
+          // Give the browser a short moment to finish laying out foreignObject content,
+          // then re-measure, re-apply sizes, and snap positions to the grid.
+          setTimeout(function () {
+            // Defensive: ensure paper container is visible
+            try {
+              element.style.visibility = 'visible';
+              if (paper && paper.el) paper.el.style.visibility = 'visible';
+            } catch (e) {}
+
+            graph.getElements().forEach(function (el) {
+              // 1) If any legacy element slipped through, upgrade it now so markup/attrs are final.
+              if (el.prop('type') !== 'Node') {
+                upgradeLegacyNode(
+                  el,
+                  el.attr(['label', 'text']) || el.attr(['htmlContent', 'html']) || '',
+                  el.attr(['body', 'stroke']) === 'transparent'
+                );
+              }
+
+              // 2) Force the view to re-apply attrs (defensive refresh).
+              el.set('attrs', JSON.parse(JSON.stringify(el.get('attrs'))));
+
+              // 3) Re-apply the current size to trigger foreignObject reflow.
+              const size = el.size();
+              // Round sizes to avoid sub-pixel drift.
+              const w = Math.round(size.width);
+              const h = Math.round(size.height);
+              el.resize(w, h);
+
+              // 4) Snap/round position to the paper grid so visual and model align.
+              const p = el.position();
+              const s = snapToGrid(p.x, p.y);
+              el.position(s.x, s.y);
+
+              // 5) Re-add tools (harmless if already present).
+              addElementTools(el);
+            });
+
+            // Redraw only the background (safer than forcing a full render).
+            if (typeof paper.drawBackground === 'function') {
+              paper.drawBackground();
+            }
+          }, 120);
+
+
+          // normalize positions and force a gentle reflow so foreignObject layout settles
+          // longer delay to allow browser to finish layout
+          setTimeout(function () {
+            // Defensive: ensure paper container is visible
+            try {
+              element.style.visibility = 'visible';
+              if (paper && paper.el) paper.el.style.visibility = 'visible';
+            } catch (e) {}
+
+            graph.getElements().forEach(function (el) {
+              // snap to grid
+              const p = el.position();
+              const s = snapToGrid(p.x, p.y);
+              el.position(s.x, s.y);
+
+              // re-apply size to trigger foreignObject reflow
+              const size = el.size();
+              // resize to same size triggers internal reflow without changing model
+              el.resize(size.width, size.height);
+
+              // trigger a small attribute change so views update
+              el.set('attrs', JSON.parse(JSON.stringify(el.get('attrs'))));
+
+              addElementTools(el);
+            });
+
+            // redraw background only (safer than forcing full render)
+            paper.drawBackground();
+          }, 120);
         })();
 
       });

@@ -2,6 +2,7 @@
 
 namespace Drupal\jointjs_field\Plugin\Field\FieldWidget;
 
+
 use Drupal\Core\Field\Attribute\FieldWidget;
 use Drupal\Core\Field\WidgetBase;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -104,12 +105,41 @@ class JointJSFieldWidget extends WidgetBase {
     ];
 
     // ------------------------------------------------------------
-    // Visible decoded JSON field
+    // Visible decoded JSON field (pre-populated with pretty JSON when possible)
     // ------------------------------------------------------------
+    $decoded_json = '';
+    if (!empty($value)) {
+      $maybe = trim($value);
+      // If it doesn't look like raw JSON, try base64 decode first.
+      if (isset($maybe[0]) && $maybe[0] !== '{' && $maybe[0] !== '[') {
+        $decoded = @base64_decode($maybe, true);
+        if ($decoded !== false) {
+          $tmp = json_decode($decoded);
+          if ($tmp !== null) {
+            $decoded_json = json_encode($tmp, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+          }
+          else {
+            // Not JSON after decode, show decoded string.
+            $decoded_json = $decoded;
+          }
+        }
+        else {
+          // Not base64, try to pretty print if it's JSON
+          $tmp = json_decode($maybe);
+          $decoded_json = ($tmp !== null) ? json_encode($tmp, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : $maybe;
+        }
+      }
+      else {
+        // Looks like JSON already
+        $tmp = json_decode($maybe);
+        $decoded_json = ($tmp !== null) ? json_encode($tmp, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : $maybe;
+      }
+    }
+
     $element['decoded'] = [
       '#type' => 'textarea',
       '#title' => $this->t('Diagram JSON (decoded)'),
-      '#default_value' => '',
+      '#default_value' => $decoded_json,
       '#attributes' => [
         'class' => ['jointjs-decoded'],
         'style' => 'width:100%; height:200px; font-family:monospace;',
@@ -157,19 +187,21 @@ class JointJSFieldWidget extends WidgetBase {
       '#attributes' => [
         'id' => 'jointjs-editor-' . $delta,
         'class' => ['jointjs-editor'],
-        'style' => 'width:800px; height:800px; position:relative; border:1px solid #ccc; background:#fafafa;',
+        // Make background transparent so the JointJS dot grid (drawGrid) can show through.
+        'style' => 'width:800px; height:800px; position:relative; border:1px solid #ccc; background:transparent;',
       ],
     ];
 
-    $element['grid_toggle'] = [
-      '#type' => 'checkbox',
-      '#title' => $this->t('Show dot grid'),
-      '#default_value' => 0,
-      '#attributes' => [
-        'class' => ['jointjs-grid-toggle'],
-        'style' => 'margin-bottom: 1rem;',
-      ],
-    ];
+    // $element['grid_toggle'] = [
+    //   '#type' => 'checkbox',
+    //   '#title' => $this->t('Show dot grid'),
+    //   // enable by default so users see the grid; change to 0 if you prefer off by default
+    //   '#default_value' => 1,
+    //   '#attributes' => [
+    //     'class' => ['jointjs-grid-toggle'],
+    //     'style' => 'margin-bottom: 1rem;',
+    //   ],
+    // ];
 
     // ------------------------------------------------------------
     // Node wizard popup
@@ -238,9 +270,12 @@ class JointJSFieldWidget extends WidgetBase {
     ];
 
     // ------------------------------------------------------------
-    // Attach JS + CSS
+    // Attach JS + CSS libraries
     // ------------------------------------------------------------
+    // Editor library (includes editor JS and ensures joint.css is loaded)
     $element['#attached']['library'][] = 'jointjs_field/jointjs.editor';
+    // Viewer library (ensures joint.css is available for viewer pages too)
+    $element['#attached']['library'][] = 'jointjs_field/jointjs.viewer';
 
     return $element;
   }
