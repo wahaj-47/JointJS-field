@@ -1,4 +1,4 @@
-.node-wizard {
+/* .node-wizard {
     z-index: 100;
     position: absolute;
     top: initial;
@@ -64,4 +64,11 @@
 .node-div h5,
 .node-div h6 {
     margin: 0
+} */
+
+.jointjs-editor.jointjs-dot-grid {
+  background-color: #fafafa !important;
+  background-image: radial-gradient(#ccc 1px, transparent 1px) !important;
+  background-size: 20px 20px !important;
+  background-position: 0 0 !important;
 }

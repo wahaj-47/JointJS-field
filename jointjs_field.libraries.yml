@@ -1,7 +1,8 @@
 jointjs.editor:
   js:
-    https://cdn.jsdelivr.net/npm/@joint/core@4.0.4/dist/joint.min.js:
+    https://cdn.jsdelivr.net/npm/@joint/core@4.2.2/dist/joint.min.js:
       { type: external, minified: true }
+    https://cdn.jsdelivr.net/npm/@joint/core@4.2.2/dist/joint.shapes.standard.js: {}
     js/jointjs-editor.js: {}
   dependencies:
     - core/drupal
@@ -9,11 +10,13 @@ jointjs.editor:
     - core/drupal.once
   css:
     theme:
+      https://cdn.jsdelivr.net/npm/@joint/core@4.2.2/dist/joint.css: { type: external }
       css/jointjs-editor.css: {}
 jointjs.viewer:
   js:
-    https://cdn.jsdelivr.net/npm/@joint/core@4.0.4/dist/joint.min.js:
+    https://cdn.jsdelivr.net/npm/@joint/core@4.2.2/dist/joint.min.js:
       { type: external, minified: true }
+    https://cdn.jsdelivr.net/npm/@joint/core@4.2.2/dist/joint.shapes.standard.js: {}
     js/jointjs-viewer.js: {}
   dependencies:
     - core/drupal
